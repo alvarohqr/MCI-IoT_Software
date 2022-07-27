@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Configuraciones</title>
+</head>
+<body>
+    <script src="{{ url_for('static', filename='scripts_config.js')}}"></script>
+    <form  method="POST"  onsubmit="config()">
+        <div class="form-group">
+          <label for="exampleInputEmail1">Notificación por correo:</label>
+          <input type="email" class="form-control" id="correoDestinatario" aria-describedby="emailHelp" placeholder="Correo destinatario">
+          <input type="email" class="form-control" id="correoRemitente" aria-describedby="emailHelp" placeholder="Correo remitente">
+          <input type="password" class="form-control" id="contra" placeholder="Password">
+        </div>
+        <div class="form-group">
+            <label for="exampleInputEmail1">Limites:</label>
+            <input class="form-control" type="text" id="minTemperatura" placeholder="Minimo Temperatura">
+            <input class="form-control" type="text" id="maxTemperatura" placeholder="Minimo Temperatura">
+            <input class="form-control" type="text" id="limMinCapacidad" placeholder="Minimo Temperatura">
+        </div>
+        <button type="submit" class="btn btn-primary">Modificar</button>
+      </form>
+      
+</body>
+</html>
