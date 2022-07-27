@@ -1,0 +1,1 @@
+db.avg1.find().sort( { _id: 1 } )
