@@ -1,79 +1,96 @@
-#Obtener y restaurar en MongoDB el archivo students.json (adjunto) y realizar los pipelines necesarios para obtener la siguiente información:
+# Obtener y restaurar en MongoDB el archivo students.json (adjunto) y 
+# realizar los pipelines necesarios para obtener la siguiente información:
     #Calificación promedio de cada alumno.
     #Calificación promedio para cada alumno, sólo de exámenes y tareas.
     #Calificación promedio de todo el grupo sólo de exámenes
 
-import pymongo
+from pymongo import MongoClient
+import pprint #pretty print
+import json
 
-client = pymongo.MongoClient("mongodb://localhost:27017/") #Servidor local
-db = client["biblio"]           # Base de datos
-coll1 = db["suspenso"]          # Colección "suspenso"
-coll2 = db["informatica"]       # Colección "informatica"
-x= db.list_collection_names()   # Array de colecciones  
+client = MongoClient("mongodb://localhost:27017/")
+db = client["mci"]
+Collection = db["students"]
 
-while (True):
-    print(""" Qué desea hacer?
-    1)Agregar elementos
-    2)Eliminar elementos
-    3)Ver el listado de las colecciones
+# Descomentar las siguientes lineas antes de ejecutar el programa
+# y volver a comentarlas para evitar id duplicados 
+#students=[]
+#for line in open('students.json','r'):
+#    students.append(json.loads(line))
+#Collection.insert_many(students)
+
+while(True):
+	print(""" Qué desea conocer?
+    1)Calificación promedio de cada alumno (examen, quiz y tareas).
+    2)Calificación promedio para cada alumno, sólo de exámenes y tareas.
+    3)Calificación promedio de todo el grupo sólo de exámenes
     4)Salir""")
 
-    a=input("\nIngrese su opción: ")
+	a=input("\nIngrese su opción: ")
 
-    if a == "1":
-        coll = input("""
-        Ingrese 1 para agregar a la colección """+ x[0] +"""
-        Ingrese 2 para agregar a la colección """+ x[1] +""" \n
-        """)
-        
-        nombre = input("Nombre del libro: ")
-        autor = input("Autor: ")
-        año = input("Año de publicación: ")
-        
-        if coll == "1":
-            #Informatica
-            coll2.insert_one({"nombre": nombre, "autor": autor, "año": año})
-            print('\nDocumento añadido!\n')           
-        elif coll == "2":
-            #Suspenso
-            coll1.insert_one({"nombre": nombre, "autor": autor, "año": año})
-            print('\nDocumento añadido!\n')        
-        else:
-            print("Opción incorrecta!\n")
+	if a == "1":
+		pipeline = [
+			{"$unwind":  "$scores"},
+			{"$group":
+				{
+					"_id": "$_id",
+					"avgscore": { "$avg": "$scores.score" }
+				}
+			},
+			{
+				"$sort":{"_id": 1}
+			}
+			]
+		pprint.pprint(list(db.students.aggregate(pipeline)))
+		print("\n")	
+		
+	elif a == "2":
+		pipeline = [
 
-    elif a == "2":
-        coll = input("""
-        Ingrese 1 para eliminar de la colección """+ x[0] +"""
-        Ingrese 2 para eliminar de la colección """+ x[1] +""" \n
-        """)
-        
-        nombre = input("Nombre del libro: ")
-        
-        if coll == "1":
-            #Informatica
-            coll2.delete_one({"nombre": nombre})
-            print('\nDocumento eliminado!\n')           
-        elif coll == "2":
-            #Suspenso
-            coll1.delete_one({"nombre": nombre})
-            print('\nDocumento eliminado!\n')      
-        else:
-            print("Opción incorrecta!\n")
+			{"$unwind": "$scores"},
+			{
+				"$group": {"_id": "$_id",
+				"avgscore": {
+					"$avg": {
+					"$cond": [
+						{"$or": [{"$eq": ["$scores.type", "exam"]}, {"$eq": [ "$scores.type","homework"]}]},
+						{"$multiply": ["$scores.score",{"$divide": [3,2 ]}] # se multiplica por 3/2 ya que se toman
+						#las 3 calificacioes
+						}, 0 #si no se cumple avgscore toma el valor de 0
+					]
+					}
+				}
+				}
+			},
 
-    elif a == "3":
-        coll = input("""
-        Ingrese 1 para visualizar la colección """+ x[0] +"""
-        Ingrese 2 para visualizar la colección """+ x[1] +""" \n
-        """)
-        if coll == "1":
-            print("\nElementos colección informatica: \n")
-            for colls in coll2.find():
-                print(colls)         
-        elif coll == "2":
-            print("\nElementos colección suspenso:  \n")
-            for colls in coll1.find():
-                print(colls)
-            print("\n")
+			{"$sort":{"_id": 1}}
+			]
+		pprint.pprint(list(db.students.aggregate(pipeline)))	
+		print("\n")	
+
+	elif a == "3":
+		pipeline = [
+			{"$unwind": "$scores"},	
+			{"$group": {"_id": "null",
+				"avgscore": {
+					"$avg": {
+						"$cond": [
+						{"$eq": [ "$scores.type","exam"]},
+						{"$multiply": [
+							"$scores.score",{"$divide":[600,200]}
+					]
+						},0 #si no se cumple avgscore toma el valor de 0
+					]
+					}
+				}
+				}
+			} 
+		]
+		pprint.pprint(list(db.students.aggregate(pipeline)))
+		print("\n")	
+	
+	else:		
+		break
         else:
             print("Opción incorrecta!\n")
             
